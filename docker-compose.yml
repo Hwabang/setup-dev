@@ -1,38 +1,39 @@
-version: '3.7'
+version: '3.8'
 
 services:
   nginx:
-    build: ./dockerfiles/nginx
+    image: nginx:latest
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
     ports:
       - "80:80"
       - "443:443"
-    volumes:
-      - ./data/nginx:/etc/nginx/conf.d
-      - ./data/certbot/conf:/etc/letsencrypt
-      - ./data/certbot/www:/var/www/certbot
     depends_on:
       - wordpress
 
   wordpress:
-    build: ./dockerfiles/wordpress
+    image: wordpress:latest
     environment:
       WORDPRESS_DB_HOST: postgres
       WORDPRESS_DB_USER: wordpress
       WORDPRESS_DB_PASSWORD: wordpress
       WORDPRESS_DB_NAME: wordpress_db
     volumes:
-      - ./data/wp:/var/www/html
+      - wordpress_data:/var/www/html
     depends_on:
       - postgres
 
   certbot:
-    build: ./dockerfiles/certbot
+    image: certbot/certbot
     volumes:
-      - ./data/certbot/conf:/etc/letsencrypt
-      - ./data/certbot/www:/var/www/certbot
+      - ./certbot/conf:/etc/letsencrypt
+      - ./certbot/www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
 
   postgres:
-    build: ./dockerfiles/postgres
+    image: postgres:latest
     environment:
       POSTGRES_USER: wordpress
       POSTGRES_PASSWORD: wordpress
@@ -41,4 +42,5 @@ services:
       - postgres_data:/var/lib/postgresql/data
 
 volumes:
+  wordpress_data:
   postgres_data:
