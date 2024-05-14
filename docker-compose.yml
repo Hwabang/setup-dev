@@ -2,20 +2,23 @@ version: '3.8'
 
 services:
   nginx:
+    container_name: nginx
     image: nginx:latest
-    volumes:
-      - ./nginx/conf.d:/etc/nginx/conf.d
-      - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
+    restart: unless-stopped
     ports:
       - "80:80"
       - "443:443"
-    depends_on:
-      - certbot
-    command: "/bin/bash -c 'while [ ! -f /etc/letsencrypt/live/hwabang.jeonghi.com/fullchain.pem ]; do sleep 5; done; nginx -g \"daemon off;\"'"
+    volumes:
+    - ./nginx/conf.d:/etc/nginx/conf.d
+    - ./certbot/conf:/etc/nginx/ssl
+    - ./certbot/data:/var/www/html
 
   wordpress:
-    image: wordpress:latest
+    container_name: wordpress
+    image: wordpress:php8.1-apache
+    restart: always
+    stdin_open: true
+    tty: true
     environment:
       WORDPRESS_DB_HOST: postgres
       WORDPRESS_DB_USER: wordpress
@@ -23,22 +26,21 @@ services:
       WORDPRESS_DB_NAME: wordpress_db
     volumes:
       - wordpress_data:/var/www/html
+      - ./wordpress:/var/www/html
     depends_on:
       - postgres
 
   certbot:
-    image: certbot/certbot
+    container_name: certbot
+    image: certbot/certbot:latest
+    command: certonly --webroot --webroot-path=/var/www/html --email jpark0902@kookmin.ac.kr --agree-tos --no-eff-email -d jeonghi.com -d hwabang.jeonghi.com
     volumes:
       - ./certbot/conf:/etc/letsencrypt
-      - ./certbot/www:/var/www/certbot
-    entrypoint: "/bin/sh -c"
-    command: >
-      'if [ ! -f /etc/letsencrypt/live/hwabang.jeonghi.com/fullchain.pem ]; then
-         certbot certonly --webroot --webroot-path=/var/www/certbot --email jpark0902@kookmin.ac.kr --agree-tos --no-eff-email -d hwabang.jeonghi.com --deploy-hook "nginx -s reload";
-       fi;
-       trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'
+      - ./certbot/logs:/var/log/letsencrypt
+      - ./certbot/data:/var/www/html
 
   postgres:
+    container_name: postgres
     image: postgres:latest
     environment:
       POSTGRES_USER: wordpress
