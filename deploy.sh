@@ -36,3 +36,4 @@ docker-compose run --rm certbot certbot certonly --webroot --webroot-path=/var/w
 docker-compose up -d nginx
 docker-compose restart
 echo "Deployment completed successfully."
+
