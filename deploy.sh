@@ -23,8 +23,16 @@ docker volume prune -f
 echo "Pruning Docker system..."
 docker system prune -af
 
-# 새로운 Docker Compose 프로젝트 실행
-echo "Starting new Docker Compose project..."
+# 필요한 디렉토리 생성
+mkdir -p nginx certbot/conf certbot/www
+
+# Docker Compose 시작
 docker-compose up -d
+
+# 최초의 Let's Encrypt 인증서 취득
+docker-compose run --rm certbot certbot certonly --webroot --webroot-path=/var/www/certbot -d hwabang.jeonghi.com --email jpark0902@kookmin.ac.kr --agree-tos --no-eff-email
+
+# nginx 컨테이너를 재시작하여 새로운 SSL 인증서 적용
+docker-compose restart nginx
 
 echo "Deployment completed successfully."
