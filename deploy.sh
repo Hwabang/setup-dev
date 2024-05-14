@@ -26,13 +26,13 @@ docker system prune -af
 # 필요한 디렉토리 생성
 mkdir -p nginx certbot/conf certbot/www
 
-# Docker Compose 시작
-docker-compose up -d
+# Docker Compose 시작 (Nginx 제외)
+docker-compose up -d certbot wordpress db
 
 # 최초의 Let's Encrypt 인증서 취득
 docker-compose run --rm certbot certbot certonly --webroot --webroot-path=/var/www/certbot -d hwabang.jeonghi.com --email jpark0902@kookmin.ac.kr --agree-tos --no-eff-email
 
-# nginx 컨테이너를 재시작하여 새로운 SSL 인증서 적용
-docker-compose restart nginx
-
+# Nginx 컨테이너 시작 및 기타 서비스 재시작
+docker-compose up -d nginx
+docker-compose restart
 echo "Deployment completed successfully."
